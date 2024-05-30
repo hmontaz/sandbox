@@ -2,6 +2,13 @@
 # This .gitignore file was automatically created by Microsoft(R) Visual Studio.
 ################################################################################
 
+*.csproj.user
 /TestProject1/.vs
 /TestProject1/TestProject1/bin
 /TestProject1/TestProject1/obj
+/SysKey/.vs
+/SysKey/SysKey/bin
+/SysKey/SysKey/obj
+/Notepad/.vs
+/Notepad/Notepad/bin
+/Notepad/Notepad/obj
