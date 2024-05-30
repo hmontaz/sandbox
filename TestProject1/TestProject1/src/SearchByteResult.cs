@@ -1,7 +1,7 @@
 ﻿namespace TestProject1
 {
 
-	public enum SearchingMethod
+	public enum SearchByteResult
 	{
 		FirstByte = 0,
 		NextByte = 1

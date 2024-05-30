@@ -51,7 +51,7 @@ namespace TestProject1
 			foreach (var item in list)
 			{
 				var index = Find(0, item);
-				index = Find(index, "lvl", SearchingMethod.NextByte);
+				index = Find(index, "lvl", SearchByteResult.NextByte);
 				Write(_bytes, ref index, new byte[] { 100 });
 			}
 
@@ -88,11 +88,16 @@ namespace TestProject1
 				"Event_InvasionOfTheRings",
 				"Event_JellyfishInvasion",
 				"Event_KillerBeesInvasion",
+				"Event_KillerLeaf",
+				"Event_KillerSeed",
 				"Event_LamaDay",
+				"Event_LavaInvasion",
 				"Event_MagicianPotion",
 				"Event_MagicianWand",
 				"Event_MantaInvasion",
 				"Event_MayaDay",
+				"Event_MeteorShower",
+				"Event_MeteorShower",
 				"Event_MilitaryInvasion",
 				"Event_NewYear",//pomegrante
 				"Event_PatrickClover",
@@ -102,8 +107,12 @@ namespace TestProject1
 				"Event_SakuraDay",
 				"Event_ScarabDay",
 				"Event_SpaceCrystal",
+				"Event_SpaceCrystal",
+				"Event_SpaceLaser",
 				"Event_SpaceLaser",
 				"Event_SpaceWars_Gems",
+				"Event_SpaceWars_Gems",
+				"Event_SpaceWars_Lightsaber",
 				"Event_SpaceWars_Lightsaber",
 				"Event_StPatrickDay",//lucky clover
 				"Event_SuperDay",
@@ -189,10 +198,7 @@ namespace TestProject1
 				"gps>Acid",
 				"gps>Money",
 				"gps>Caviar",
-				"Event_SpaceWars_Lightsaber",
-				"Event_SpaceWars_Gems",
-				"Event_SpaceLaser",
-				"Event_SpaceCrystal",
+
 			};
 			foreach (var item in list)
 			{
@@ -224,42 +230,66 @@ namespace TestProject1
 			throw new Exception($"Unhandled Byte 0x{_bytes[index].ToString("x")}");
 		}
 
-		int FindMultiPath(byte[] source, int startIndex, string[] keys)
+		internal int FindMultiPath(int startIndex, string[] keys)
 		{
 			var found = false;
 			var index = startIndex;
 			foreach (var key in keys)
 			{
-				index = Find(source, index, key, SearchingMethod.NextByte);
+				index = Find(index, key, SearchByteResult.NextByte);
 				found = true;
 			}
 			if (!found) return -1;
 			return index;
 		}
 
-		int Find(byte[] source, int startIndex, string s, SearchingMethod method = SearchingMethod.FirstByte)
+		public int Find(int startIndex, string s, SearchByteResult method = SearchByteResult.FirstByte)
 		{
 			var bytes = Encoding.ASCII.GetBytes(s);
-			return Find(source, startIndex, bytes, method);
+			return FindForward(startIndex, bytes, method);
 		}
-		int Find(byte[] source, int startIndex, byte[] bytes, SearchingMethod method)
+		internal int FindForward(int startIndex, byte[] bytes, SearchByteResult method)
 		{
-			int maxFirstCharSlot = source.Length - bytes.Length + 1;
+			int maxFirstCharSlot = _bytes.Length - bytes.Length + 1;
 			for (int i = startIndex; i < maxFirstCharSlot; i++)
 			{
-				if (source[i] != bytes[0]) // compare only first byte
+				if (_bytes[i] != bytes[0]) // compare only first byte
 					continue;
 
 				// found a match on first byte, now try to match rest of the pattern
 				for (int j = bytes.Length - 1; j >= 1; j--)
 				{
-					if (source[i + j] != bytes[j]) break;
+					if (_bytes[i + j] != bytes[j]) break;
 					if (j == 1)
-						return i + (method == SearchingMethod.NextByte ? bytes.Length : 0);
+						return i + (method == SearchByteResult.NextByte ? bytes.Length : 0);
 				}
 			}
 			return -1;
 		}
+		internal int FindBackward(int startIndex, Predicate<byte> predicate)
+		{
+			for (int i = startIndex; i > 0; i--)
+			{
+				if (predicate(_bytes[i])) return i;
+			}
+			return -1;
+		}
+		internal int FindBackward(int startIndex, byte[] bytes, SearchByteResult method)
+		{
+			for (int i = startIndex; i > 0; i--)
+			{
+				// found a match on first byte, now try to match rest of the pattern
+				for (int j = bytes.Length - 1; j >= 0; j--)
+				{
+					//if (_bytes[i - j] != bytes[j]) break;
+					if (_bytes[i - bytes.Length + j + 1] != bytes[j]) break;
+					if (j == 0)
+						return i - (method == SearchByteResult.FirstByte ? bytes.Length : 0) + 1;
+				}
+			}
+			return -1;
+		}
+
 		void Write(byte[] dest, ref int index, byte[] bytes)
 		{
 			foreach (var b in bytes)
@@ -282,7 +312,7 @@ namespace TestProject1
 			var n = 0;
 			while (true)
 			{
-				index = Find(_bytes, index, new byte[] { 0xd7, 0xff }, SearchingMethod.FirstByte);
+				index = FindForward(index, new byte[] { 0xd7, 0xff }, SearchByteResult.FirstByte);
 				if (index < 0) break;
 				n++;
 
@@ -290,6 +320,43 @@ namespace TestProject1
 				//Write(_bytes, ref index, new byte[] { /*0xd7, 0xff, 0x8d,*/ 0xcd, 0x45, 0x20, 0x64, 0xc8/*, 0x66, 0x2f*/ });//worked
 				Write(_bytes, ref index, new byte[] { /*0xd7, 0xff, 0x8d,*/ 0x00, 0x00, 0x00, 0x00, 0x00/*, 0x66, 0x2f*/ });//worked better
 			}
+		}
+
+		public string[] GetAllEventNames()
+		{
+			var list = new List<string>();
+			var empty = new string[] { };
+			var index = 0;
+			var bytes = Encoding.Unicode.GetBytes("¦amount").Where(a => a != 0x0).ToArray();
+			var forward = (int i0) => { index = i0 + bytes.Length + 1; };
+			Predicate<byte> isValidChar = (c) => (c >= (byte)'A' && c <= (byte)'Z')
+					|| (c >= (byte)'a' && c <= (byte)'z')
+					|| (c >= (byte)'0' && c <= (byte)'9')
+					|| Array.IndexOf([(byte)'_'], c) != -1;
+			while (true)
+			{
+				var i1 = FindForward(index, bytes, SearchByteResult.FirstByte) - 2;
+				if (i1 < 0) break;
+				if (_bytes[i1 + 1] != 0x83)//ƒ
+				{
+					forward(i1);
+					continue;
+				}
+
+				var i0 = FindBackward(i1, c => !isValidChar(c));
+				if (i0 < 0)
+				{
+					forward(i0);
+					continue;
+				}
+				i0++;
+				var len = i1 - i0 + 1;
+				var s = Encoding.ASCII.GetString(_bytes.Skip(i0).Take(len).ToArray());
+				list.Add(s);
+				forward(i1 + 1);
+			}
+
+			return list.ToArray();
 		}
 	}
 }

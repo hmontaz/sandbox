@@ -8,10 +8,18 @@ namespace TestProject1
 {
 	public partial class UnitTest2
 	{
+
+		[Fact]
+		public void GetAllEventNames()
+		{
+			var path = Path.GetFullPath("..\\..\\..\\..\\snapshots\\snapshot 14\\");
+			var dataFile = new DataFile(Path.Combine(path, "VENOM_ud_data.dat"));
+			var list = dataFile.GetAllEventNames();
+		}
 		[Fact]
 		public void WriteNewFile()
 		{
-			var path = Path.GetFullPath("..\\..\\..\\..\\snapshots\\snapshot 12\\");
+			var path = Path.GetFullPath("..\\..\\..\\..\\snapshots\\snapshot 15\\");
 			var dataFile = new DataFile(Path.Combine(path, "VENOM_ud_data.dat"));
 			var fraction = 1f - 1e-28f;
 
